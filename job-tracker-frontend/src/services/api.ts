@@ -4,17 +4,17 @@ import axios from "axios";
 const api = axios.create({
   baseURL:
     import.meta.env.VITE_API_BASE_URL ||
-    "http://localhost:8080/api",
+    "https://online-job-tracker-backend.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
+// Attach JWT token to protected requests
 api.interceptors.request.use(
   (config) => {
     const url = config.url ?? "";
 
-    // Public authentication endpoints do not require a token.
     if (!url.includes("/auth/")) {
       const token = localStorage.getItem("token");
 
@@ -28,6 +28,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Handle API errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
