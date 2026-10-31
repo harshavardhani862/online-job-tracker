@@ -8,12 +8,13 @@ import com.klu.jobtracker.dto.UserResponse;
 import com.klu.jobtracker.service.AuthService;
 
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping({"/api/auth", "/auth"})
 public class AuthController {
 
     private final AuthService service;
@@ -22,19 +23,25 @@ public class AuthController {
         this.service = service;
     }
 
+    // USER SIGNUP
     @PostMapping("/signup")
     public ResponseEntity<UserResponse> signup(
             @Valid @RequestBody SignupRequest request) {
 
         UserResponse response = service.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
     }
 
+    // USER SIGNIN
     @PostMapping("/signin")
     public ResponseEntity<LoginResponse> signin(
             @Valid @RequestBody LoginRequest request) {
 
         LoginResponse response = service.signin(request);
+
         return ResponseEntity.ok(response);
     }
 }

@@ -5,8 +5,8 @@ import com.klu.jobtracker.security.JwtAuthenticationFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -30,13 +30,11 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
     }
 
-    // Password encryption
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Authentication manager
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration)
@@ -45,42 +43,51 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 
-    // Spring Security configuration
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http) throws Exception {
 
         http
-            // Disable CSRF for JWT-based REST APIs
+            // Disable CSRF for JWT-based REST API
             .csrf(csrf -> csrf.disable())
 
             // Enable CORS
-            .cors(Customizer.withDefaults())
+            .cors(cors -> cors.configurationSource(
+                    corsConfigurationSource()
+            ))
 
-            // Stateless session management
+            // Stateless JWT authentication
             .sessionManagement(session ->
                 session.sessionCreationPolicy(
                     SessionCreationPolicy.STATELESS
                 )
             )
 
-            // API authorization
+            // Authorization rules
             .authorizeHttpRequests(auth -> auth
 
-                // Public authentication endpoints
+                // Allow preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // Allow signup and signin
                 .requestMatchers(
-                    "/api/auth/**",
+                    "/auth/**",
+                    "/api/auth/**"
+                ).permitAll()
+
+                // Swagger access
+                .requestMatchers(
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
                     "/error"
                 ).permitAll()
 
-                // All remaining APIs require authentication
+                // All remaining endpoints require authentication
                 .anyRequest().authenticated()
             )
 
-            // JWT authentication filter
+            // JWT filter
             .addFilterBefore(
                 jwtFilter,
                 UsernamePasswordAuthenticationFilter.class
@@ -89,22 +96,19 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration =
-                new CorsConfiguration();
+        CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allowed frontend origins
         configuration.setAllowedOrigins(
             List.of(
                 "http://localhost:5173",
-                "https://online-job-tracker-amber.vercel.app"
+                "https://online-job-tracker-amber.vercel.app",
+                "https://online-job-tracker-theta.vercel.app"
             )
         );
 
-        // Allowed HTTP methods
         configuration.setAllowedMethods(
             List.of(
                 "GET",
@@ -116,15 +120,12 @@ public class SecurityConfig {
             )
         );
 
-        // Allowed request headers
         configuration.setAllowedHeaders(
             List.of("*")
         );
 
-        // Allow credentials
         configuration.setAllowCredentials(true);
 
-        // Register CORS configuration
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
