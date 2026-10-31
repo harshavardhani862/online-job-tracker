@@ -48,46 +48,43 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
-            // Disable CSRF for JWT-based REST API
             .csrf(csrf -> csrf.disable())
 
-            // Enable CORS
             .cors(cors -> cors.configurationSource(
-                    corsConfigurationSource()
+                corsConfigurationSource()
             ))
 
-            // Stateless JWT authentication
             .sessionManagement(session ->
                 session.sessionCreationPolicy(
                     SessionCreationPolicy.STATELESS
                 )
             )
 
-            // Authorization rules
             .authorizeHttpRequests(auth -> auth
 
-                // Allow preflight requests
+                // Allow browser CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Allow signup and signin
+                // Public authentication endpoints
                 .requestMatchers(
                     "/auth/**",
                     "/api/auth/**"
                 ).permitAll()
 
-                // Swagger access
+                // Swagger endpoints
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/swagger-ui.html",
-                    "/v3/api-docs/**",
-                    "/error"
+                    "/v3/api-docs/**"
                 ).permitAll()
 
-                // All remaining endpoints require authentication
+                // Error endpoint
+                .requestMatchers("/error").permitAll()
+
+                // All other endpoints require JWT authentication
                 .anyRequest().authenticated()
             )
 
-            // JWT filter
             .addFilterBefore(
                 jwtFilter,
                 UsernamePasswordAuthenticationFilter.class
@@ -101,14 +98,17 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // Frontend URLs allowed to access backend
         configuration.setAllowedOrigins(
             List.of(
                 "http://localhost:5173",
+                "https://online-job-tracker-one.vercel.app",
                 "https://online-job-tracker-amber.vercel.app",
                 "https://online-job-tracker-theta.vercel.app"
             )
         );
 
+        // Allowed HTTP methods
         configuration.setAllowedMethods(
             List.of(
                 "GET",
@@ -120,11 +120,22 @@ public class SecurityConfig {
             )
         );
 
+        // Allowed request headers
         configuration.setAllowedHeaders(
-            List.of("*")
+            List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+            )
         );
 
+        // Allow JWT and credentials
         configuration.setAllowCredentials(true);
+
+        // Cache preflight response for one hour
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
